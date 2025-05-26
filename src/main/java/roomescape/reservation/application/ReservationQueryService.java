@@ -3,6 +3,7 @@ package roomescape.reservation.application;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.exception.impl.NotFoundException;
@@ -22,23 +23,13 @@ import roomescape.theme.domain.repository.ThemeRepository;
 
 @Service
 @Transactional(readOnly = true)
+@AllArgsConstructor
 public class ReservationQueryService {
 
     private final ReservationRepository reservationRepository;
     private final ReservationTimeRepository reservationTimeRepository;
     private final ThemeRepository themeRepository;
     private final WaitingRepository waitingRepository;
-
-    public ReservationQueryService(
-            final ReservationRepository reservationRepository,
-            final ReservationTimeRepository reservationTimeRepository,
-            final ThemeRepository themeRepository,
-            final WaitingRepository waitingRepository) {
-        this.reservationRepository = reservationRepository;
-        this.reservationTimeRepository = reservationTimeRepository;
-        this.themeRepository = themeRepository;
-        this.waitingRepository = waitingRepository;
-    }
 
     public List<ReservationResponse> findReservedReservations() {
         return reservationRepository.findAllWithAssociations()

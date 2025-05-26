@@ -1,6 +1,7 @@
 package roomescape.theme.application;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.exception.impl.BadRequestException;
@@ -11,17 +12,13 @@ import roomescape.theme.domain.Theme;
 import roomescape.theme.domain.repository.ThemeRepository;
 
 @Service
+@AllArgsConstructor
 public class ThemeService {
 
     private static final int TOP_THEME_COUNT = 10;
 
     private final ReservationRepository reservationRepository;
     private final ThemeRepository themeRepository;
-
-    public ThemeService(final ReservationRepository reservationRepository, final ThemeRepository themeRepository) {
-        this.reservationRepository = reservationRepository;
-        this.themeRepository = themeRepository;
-    }
 
     @Transactional(readOnly = true)
     public List<ThemeResponse> findAll() {

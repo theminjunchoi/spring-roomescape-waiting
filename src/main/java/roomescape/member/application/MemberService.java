@@ -1,6 +1,7 @@
 package roomescape.member.application;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.exception.impl.NotFoundException;
@@ -9,13 +10,10 @@ import roomescape.member.domain.Member;
 import roomescape.member.domain.repository.MemberRepository;
 
 @Service
+@AllArgsConstructor
 public class MemberService {
 
     private final MemberRepository memberRepository;
-
-    public MemberService(final MemberRepository memberRepository) {
-        this.memberRepository = memberRepository;
-    }
 
     @Transactional(readOnly = true)
     public List<MemberResponse> findAll() {
