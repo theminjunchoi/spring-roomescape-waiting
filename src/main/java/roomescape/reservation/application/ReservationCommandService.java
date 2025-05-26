@@ -3,6 +3,7 @@ package roomescape.reservation.application;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.exception.impl.BadRequestException;
@@ -13,6 +14,7 @@ import roomescape.member.domain.repository.MemberRepository;
 import roomescape.reservation.application.dto.AdminReservationRequest;
 import roomescape.reservation.application.dto.MemberReservationRequest;
 import roomescape.reservation.application.dto.MemberWaitingRequest;
+import roomescape.reservation.application.dto.ReservationRequest;
 import roomescape.reservation.application.dto.ReservationResponse;
 import roomescape.reservation.application.dto.WaitingResponse;
 import roomescape.reservation.domain.Reservation;
@@ -26,6 +28,7 @@ import roomescape.theme.domain.repository.ThemeRepository;
 
 @Service
 @Transactional
+@AllArgsConstructor
 public class ReservationCommandService {
 
     private final ReservationRepository reservationRepository;
@@ -34,42 +37,17 @@ public class ReservationCommandService {
     private final MemberRepository memberRepository;
     private final WaitingRepository waitingRepository;
 
-    public ReservationCommandService(
-            final ReservationRepository reservationRepository,
-            final ReservationTimeRepository reservationTimeRepository,
-            final ThemeRepository themeRepository,
-            final MemberRepository memberRepository,
-            final WaitingRepository waitingRepository
+    public ReservationResponse addMemberReservation(
+            final MemberReservationRequest request,
+            final Long memberId
     ) {
-        this.reservationRepository = reservationRepository;
-        this.reservationTimeRepository = reservationTimeRepository;
-        this.themeRepository = themeRepository;
-        this.memberRepository = memberRepository;
-        this.waitingRepository = waitingRepository;
+        return createReservation(request, memberId);
     }
 
-    public ReservationResponse addMemberReservation(final MemberReservationRequest request, final Long memberId) {
-        final ReservationTime time = getReservationTime(request.timeId());
-        final Theme theme = getTheme(request.themeId());
-        final Member member = getMember(memberId);
-
-        validateHasTimeConflict(request.date(), time, theme);
-        validatePastDateTime(request.date(), time.getStartAt());
-
-        final Reservation reservation = new Reservation(request.date(), time, theme, member);
-        return ReservationResponse.from(reservationRepository.save(reservation));
-    }
-
-    public ReservationResponse addAdminReservation(final AdminReservationRequest request) {
-        final ReservationTime time = getReservationTime(request.timeId());
-        final Theme theme = getTheme(request.themeId());
-        final Member member = getMember(request.memberId());
-
-        validateHasTimeConflict(request.date(), time, theme);
-        validatePastDateTime(request.date(), time.getStartAt());
-
-        final Reservation reservation = new Reservation(request.date(), time, theme, member);
-        return ReservationResponse.from(reservationRepository.save(reservation));
+    public ReservationResponse addAdminReservation(
+            final AdminReservationRequest request
+    ) {
+        return createReservation(request, request.memberId());
     }
 
     public WaitingResponse addMemberWaiting(final MemberWaitingRequest request, final Long memberId) {
@@ -112,6 +90,21 @@ public class ReservationCommandService {
                 new Reservation(waiting.getDate(), waiting.getTime(), waiting.getTheme(), waiting.getMember()));
     }
 
+    private ReservationResponse createReservation(
+            final ReservationRequest request,
+            final Long memberId
+    ) {
+        final ReservationTime time = getReservationTime(request.timeId());
+        final Theme theme = getTheme(request.themeId());
+        final Member member = getMember(memberId);
+
+        validateHasTimeConflict(request.date(), time, theme);
+        validatePastDateTime(request.date(), time.getStartAt());
+
+        final Reservation reservation = new Reservation(request.date(), time, theme, member);
+        return ReservationResponse.from(reservationRepository.save(reservation));
+    }
+
     private void validatePastDateTime(final LocalDate date, final LocalTime time) {
         if (LocalDateTime.of(date, time).isBefore(LocalDateTime.now())) {
             throw new BadRequestException("현재보다 과거의 날짜로 예약할 수 없습니다.");
@@ -125,7 +118,7 @@ public class ReservationCommandService {
             final ReservationTime time
     ) {
         if (reservationRepository.existsByDateAndTimeAndThemeAndMember(request.date(), time, theme, member) ||
-                waitingRepository.existsByDateAndTimeAndThemeAndMember(request.date(), time, theme, member)
+            waitingRepository.existsByDateAndTimeAndThemeAndMember(request.date(), time, theme, member)
         ) {
             throw new ConflictException("이미 예약 확정 및 대기 건수가 있습니다.");
         }
