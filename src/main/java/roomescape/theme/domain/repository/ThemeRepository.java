@@ -14,16 +14,29 @@ public interface ThemeRepository extends JpaRepository<Theme, Long> {
                 t.name AS theme_name,
                 t.description,
                 t.thumbnail
-            FROM
-                reservation r
-            JOIN
-                theme t ON r.theme_id = t.id
-            WHERE
-                r.date BETWEEN DATEADD('DAY', -7, CURRENT_DATE) AND DATEADD('DAY', -1, CURRENT_DATE)
-            GROUP BY
-                t.id, t.name, t.description, t.thumbnail
-            ORDER BY
-                COUNT(r.id) DESC
+            FROM theme t
+            JOIN (
+                SELECT
+                    r.theme_id,
+                    COUNT(*) AS total_count
+                FROM reservation r
+                WHERE r.date BETWEEN DATEADD('DAY', -7, CURRENT_DATE) AND DATEADD('DAY', -1, CURRENT_DATE)
+                GROUP BY r.theme_id
+            
+                UNION ALL
+            
+                SELECT
+                    w.theme_id,
+                    COUNT(*) AS total_count
+                FROM waiting w
+                WHERE 
+                    w.waiting_status IN ('PENDING', 'REJECTED', 'ACCEPTED')
+                    AND w.date BETWEEN DATEADD('DAY', -7, CURRENT_DATE) AND DATEADD('DAY', -1, CURRENT_DATE)
+                GROUP BY w.theme_id
+            ) AS combined
+            ON t.id = combined.theme_id
+            GROUP BY t.id, t.name, t.description, t.thumbnail
+            ORDER BY SUM(combined.total_count) DESC
             LIMIT :limit
             """)
     List<Theme> findByRank(@Param("limit") int limit);
